@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Light Control</title>
+    <link rel="stylesheet" href="traffic.css">
+
+    <script type="module">
+        // Import the functions needed from the SDKs 
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+        
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2DO5u1e2wYPbgi4x2JvwNYABQGFMgTUI",
+            authDomain: "trafficlightproject-c5137.firebaseapp.com",
+            databaseURL: "https://trafficlightproject-c5137-default-rtdb.firebaseio.com",
+            projectId: "trafficlightproject-c5137",
+            storageBucket: "trafficlightproject-c5137.appspot.com",
+            messagingSenderId: "1022577819181",
+            appId: "1:1022577819181:web:dda9f916d50a95c1d642a4",
+            measurementId: "G-0SF42BYG6J"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Function to set traffic light value in Firebase
+        function setTrafficLight(color) {
+            const trafficLightRef = ref(database, 'trafficLight');
+            return set(trafficLightRef, color)
+                .then(() => {
+                    console.log("Traffic light color set to:", color);
+                })
+                .catch((error) => {
+                    console.error("Error setting traffic light color:", error);
+                });
+        }
+
+        // Function to update "Current Active Light" text in the table
+        function updateActiveLightText(color) {
+            const activeLightCell = document.getElementById('activeLight');
+            let lightText;
+            switch (color) {
+                case 'Red':
+                    lightText = 'Red';
+                    break;
+                case 'Blue':
+                    lightText = 'Blue';
+                    break;
+                case 'Green':
+                    lightText = 'Green';
+                    break;
+                case 'off':
+                    lightText = 'Off';
+                    break;
+                default:
+                    lightText = 'Unknown';
+            }
+            activeLightCell.textContent = lightText;
+        }
+
+        // Function to read the current traffic light value from Firebase
+        function readTrafficLight() {
+            const trafficLightRef = ref(database, 'trafficLight');
+            onValue(trafficLightRef, (snapshot) => {
+                const data = snapshot.val();
+                updateActiveLightText(data);
+            }, {
+                onlyOnce: true // Set to false if you want continuous updates
+            });
+        }
+
+        // Form submit event
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initially load the traffic light value from Firebase
+            readTrafficLight();
+
+            document.getElementById('trafficLightForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+                const light = document.querySelector('input[name="light"]:checked');
+                if (light) {
+                    const selectedLight = light.value;
+                    setTrafficLight(selectedLight)
+                        .then(() => {
+                            // After setting the value in Firebase, update the active light text
+                            updateActiveLightText(selectedLight);
+                        });
+                } else {
+                    alert("Please select a light.");
+                }
+            });
+
+            // Function to update the text when radio button changes
+            document.querySelectorAll('input[name="light"]').forEach(radio => {
+                radio.addEventListener('change', function () {
+                    const light = document.querySelector('input[name="light"]:checked');
+                    if (light) {
+                        updateActiveLightText(light.value);
+                    }
+                });
+            });
+
+            // Reset all lights
+            function resetLights() {
+                setTrafficLight('off')
+                    .then(() => {
+                        updateActiveLightText('off'); // Reset the text to default state
+                    });
+            }
+        
+            // Attach resetLights function to global scope if needed
+            window.resetLights = resetLights;
+        });
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="logo.png" alt="Traffic Light Icon" class="traffic-icon">
+            <h1>Traffic Control</h1>
+        </div>
+
+        <table class="status-table">
+            <thead>
+                <tr>
+                    <th>Criteria</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Traffic Light Status</td>
+                    <td id="trafficStatus">Active</td>
+                </tr>
+                <tr>
+                    <td>Current Active Light</td>
+                    <td id="activeLight">----</td> 
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="form-container">
+            <form id="trafficLightForm">
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="light" value="Red"> Red
+                    </label>
+                    <label>
+                        <input type="radio" name="light" value="Blue"> Blue 
+                    </label>
+                    <label>
+                        <input type="radio" name="light" value="Green"> Green
+                    </label>
+                </div>
+                <div class="button-group">
+                    <button type="submit" class="submit-btn">Submit</button>
+                    <button type="button" class="reset-btn" onclick="resetLights()">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>
